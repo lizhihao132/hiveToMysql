@@ -30,7 +30,7 @@ hive export to mysql, table field mapping and partly export supported.
 				9996: hive 导出的数据与表头对应不上
 				9997: hive 字段不存在(error_if_src_field_not_exsits=true 时生效)
 				9998: 没有数据(error_if_none_data=true 时生效)
-				
+				9999: 其它错误
 				
 		
 		 dump.conf 配置了hive 表到 mysql 表的字段映射. 
