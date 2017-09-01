@@ -13,7 +13,8 @@ hive export to mysql, table field mapping and partly export supported. Finally y
 		故开发此程序,支持以上功能.
 [用法  ] 运行 run.sh.
 
-[额外  ] 本程序在处理出错时会返回错误码给上层调用者, 可以兼容 Tss 捕获脚本运行的错误. Tss 中将 wrap.sh 指定为运行脚本即可.
+[额外  ] 本程序在处理出错时会返回错误码给上层调用者, 可以兼容 Tss 捕获脚本运行的错误. Tss 中将 run.sh 指定为运行脚本即可.
+		尤其注意的是, 程序将 Hive 中的数据统一当成 varchar 类型导入到 mysql 中; 并且用较简单地方式防止 sql 注入.
 
 [配置1 ] dump.conf 是总体配置文件.它指明了 hive 和 mysql 的库信息, 以及一些导出-导出配置, 如下:
 			1.dump.conf 中 ds 表示要导出大数据某个日期的数据. ds 不设置或设置为 ? 表示取上一个自然日期
