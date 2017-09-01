@@ -26,6 +26,7 @@ public class HiveToMysql {
     private String confFile;
     private String sqlFileName;
     private String dataFileName;
+	private String mapFileName;
     
     //hive config
     private String hive_db;
@@ -51,9 +52,8 @@ public class HiveToMysql {
     private Boolean errorIfSrcFieldNotExsits;
     private Boolean errorIfNoneData;
     
-    //
-    private String mapFileName;
-    private List<String> targetFieldNameList;//{"ds","zhanghao","version","farendma","nbzhywzl","zhanghmc","yewubima","zhnghsbm","zhanghxh","zhyngyjg","biaonwbs","huobdaih","yuefangx","yegenxms","yejcbioz","rzyesfwl","zhanghye","kaihuriq","kaihuguy","kaihgyls","zuihjyrq","shqizhye","hexiaorq","hexiaogy","hexiaols","nbzhtybz","zhanghzt","jfsgjzxk","dfsgjzxk","niamqlbz","nbbeizhu","field_s_1","field_s_2","field_s_3","weihguiy","weihjigo","weihriqi","shijchuo"};
+    //middle data
+    private List<String> targetFieldNameList;
     private Map<String, String> fieldNameMap;   //导入字段与导出字段的映射 mysql -> hive
     private Map<String, Integer> srcFieldOrderMap;
     private Map<String,String> constantFieldAndValue; //map 中以 # 开头的是常量, 如 key=$value, 此时 key 字段的值是配置在 conf 中的常量, 以 #开头表示是立即数
@@ -168,6 +168,9 @@ public class HiveToMysql {
         
     }
     
+	/**
+		取得定义在 conf 中的变量. 注意 ? 是一个特殊符号
+	*/
     private String getValueInConf(String var)
     {
         if("ds".equals(var))
@@ -182,6 +185,9 @@ public class HiveToMysql {
         return appConf.getProperty(var);
     }
     
+	/**
+		导入到目标表中
+	*/
     public int dumpToTarget()throws IOException, InterruptedException
     {
         if(!skipDumpToLocalFile)
@@ -208,6 +214,9 @@ public class HiveToMysql {
         return 0;
     }
     
+	/**
+		导出到本地
+	*/
     private int dumpToLocal() throws IOException, InterruptedException
     {
         FileOutputStream fos = new FileOutputStream(dataFileName,false);
@@ -218,6 +227,9 @@ public class HiveToMysql {
         return execCmd(cmd);
     }
     
+	/**
+		由本地数据得到导入的 sql
+	*/
     private boolean localDumpToSql() throws IOException
     {
         parseDataFile();
@@ -237,6 +249,9 @@ public class HiveToMysql {
         return true;
     }
     
+	/**
+		sql 导出到目标表中
+	*/
     private int sqlDumpToTarget() throws IOException, InterruptedException 
     {
         String mysql = String.format("mysql -h%s -P%s -u%s -p%s -D%s --default-character-set=utf8", 
@@ -273,6 +288,9 @@ public class HiveToMysql {
         return execCmd("sh " + tmpSh);
     }
     
+	/**
+		解析导出到本地的 hive 数据
+	*/
     private void parseDataFile()throws IOException
     {
         BufferedReader br = new BufferedReader(new FileReader(dataFileName));
@@ -313,6 +331,9 @@ public class HiveToMysql {
         }
     }
     
+	/**
+		获得 insert 语句的 sql
+	*/
     private String getInsertSql() throws IOException
     {
         StringBuffer ret = new StringBuffer();
@@ -354,6 +375,9 @@ public class HiveToMysql {
         return ret.toString();
     }
     
+	/**
+		获得 insert 语句的头
+	*/
     private String insertHeader()
     {
         StringBuffer ret = new StringBuffer();
@@ -380,6 +404,7 @@ public class HiveToMysql {
     }
     
     /**
+	 * 获得 insert 语句的 values
      * 根据配置的字段映射: target=src, 插入 src 字段的值. 注意 map 中的 $变量和 #常量
      * 若 src 字段不在 hive 表中则忽略对应的 target 字段
      * @param srcValues
@@ -433,6 +458,7 @@ public class HiveToMysql {
     }
     
     /**
+	 * 简单地防止 sql 注入. 也为了得到正确的 sql 语句
      * 不存在 ' 或 " 则无所谓用什么去包裹
      * 若串中存在 ' 则使用 " 去包裹
      * 若串中存在 " 则使用 ' 去包裹
@@ -463,6 +489,9 @@ public class HiveToMysql {
         }
     }
     
+	/**
+		使用 wrapStr 去包围 str
+	*/
     private String safeWrapBy(String str, String wrapStr)
     {
         StringBuffer ret = new StringBuffer();
@@ -477,6 +506,9 @@ public class HiveToMysql {
         }
     }
     
+	/**
+		得到源表中的字段在导出结果表头中的顺序
+	*/
     private Map<String, Integer> fieldNameToSrcOrder(List<String> fieldName)
     {
         Map<String, Integer> ret = new HashMap<>();
@@ -489,6 +521,7 @@ public class HiveToMysql {
     }
     
     /**
+	 * 得到源表导出数据中的表头
      * hive 导到本地的 data 中的第一行是 header，一般为 hive_table.field1  hive_table.field2 ...
      * 此函数取出 field1, field2 ...
      * 兼容表头没  hive_table. 只有 field 的情况
@@ -510,12 +543,18 @@ public class HiveToMysql {
         return fields;
     }
     
+	/**
+		执行 cmds 命令列表
+	*/
     public int execCmd(List<String> cmds) throws IOException, InterruptedException {
         ProcessBuilder pb =new ProcessBuilder(cmds);
         
         return printOutputStream(pb.start(),null);
     }
     
+	/**
+		执行 cmd 命令
+	*/
     public int execCmd(String cmd) throws IOException, InterruptedException {
         if(testMode)
         {
@@ -536,6 +575,9 @@ public class HiveToMysql {
         execCmd("ping 123.0.0.1");
     }
     
+	/**
+		实时打印进程 process 的输出流
+	*/
     private int printOutputStream(final Process process, List<String> processOutputs)throws IOException, InterruptedException
     {
         final StringBuilder result []= {new StringBuilder(), new StringBuilder()};
