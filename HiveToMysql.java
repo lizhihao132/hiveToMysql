@@ -178,6 +178,7 @@ public class HiveToMysql {
             if(null == ds || "?".equals(ds))
             {
                 Calendar c = Calendar.getInstance();
+		c.add(Calendar.DAY_OF_YEAR, -1);
                 ds = new SimpleDateFormat(ds_formater).format(c.getTime());
             }
             return ds;
